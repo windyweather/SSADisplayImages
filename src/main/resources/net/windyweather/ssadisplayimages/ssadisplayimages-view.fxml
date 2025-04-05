@@ -46,7 +46,7 @@
                     <content>
                         <Pane prefHeight="200.0" prefWidth="200.0">
                             <children>
-                                <ImageView pickOnBounds="true" preserveRatio="true" />
+                                <ImageView fx:id="imgImageView" pickOnBounds="true" preserveRatio="true" />
                             </children>
                         </Pane>
                     </content>

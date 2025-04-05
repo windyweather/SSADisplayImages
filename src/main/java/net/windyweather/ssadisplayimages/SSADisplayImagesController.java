@@ -3,13 +3,20 @@ package net.windyweather.ssadisplayimages;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 
 // See if we can find DirectoryScanner somewhere
@@ -61,14 +68,27 @@ public class SSADisplayImagesController {
     public Button btnMakeTestPairs;
     public TextField txtStatus;
     public Button btnCloseAppButton;
-    @FXML
-    private Label welcomeText;
+    public ImageView imgImageView;
+    //@FXML
 
-    @FXML
 
-    //
-    // Put some text in the status line to say what's up
-    //
+    //@FXML
+
+    /*
+        List of images from the last View Source / Destination
+        Which Image are we pointed to
+        and do we have any images at all
+     */
+    private String[] sImageList;
+    private int intImageIndex;
+    private boolean bImagesValid;
+
+    public Image anImage;
+    private double dZoomScale;
+
+    /*
+   Put some text in the status line to say what's up
+    */
     public void setStatus( String sts ) {
 
         txtStatus.setText( sts );
@@ -81,6 +101,132 @@ public class SSADisplayImagesController {
         System.out.println(str);
     }
 
+    /*
+        Open an image from the list based on the index
+        Just do nothing if we don't have one
+     */
+
+    void OpenImageFromList( ) {
+
+        /*
+            Check for sanity of the call
+         */
+        if ( !bImagesValid || intImageIndex >= sImageList.length ) {
+            setStatus("OpenImageFromList no images");
+            return;
+        }
+        /*
+            Get the image we are interested in
+         */
+        String imageFilePath = sImageList[intImageIndex];
+        printSysOut(String.format( "openImageFromList - Opening %s", imageFilePath ));
+        File selectedImageFile = new File( imageFilePath );
+        /*
+            we appear to have a file so we will try to load the image with it.
+         */
+        InputStream imageAsStream;
+        try {
+            //assert selectedImageFile != null;
+            imageAsStream = new FileInputStream(selectedImageFile);
+        } catch (FileNotFoundException e) {
+            printSysOut("Somehow, image file not found");
+            throw new RuntimeException(e);
+        }
+        /*
+            Fire up the image in the GUI
+         */
+        anImage = new Image( imageAsStream );
+        imgImageView.setImage( anImage );
+
+        imgImageView.setPreserveRatio(true);
+
+        /*
+            Don't need the following because the ScrollPane is already connected
+            to the imageview by fxml
+         */
+        //spScrollPane = new ScrollPane(imgImageView);
+        spImagePane.setPannable(true);
+        spImagePane.setHvalue(0.5);
+        spImagePane.setVvalue(0.5);
+
+         /*
+            Now set up a scroll wheel based zoom
+            and set a default zoom scale
+         */
+
+        dZoomScale = 1.0;
+        printSysOut("setup Wheel to zoom - ImageView Scroll Event");
+        imgImageView.setOnScroll(
+                new EventHandler<ScrollEvent>() {
+                    @Override
+                    public void handle(ScrollEvent event) {
+                        event.consume();
+
+                        //printSysOut("Zoom with wheel");
+                        double zoomFactor = 1.05;
+                        double deltaY = event.getDeltaY();
+                    /*
+                        Don't zoom forever. Just ignore it after
+                        a while.
+                     */
+                        double dScale = dZoomScale;
+                        if (deltaY > 0.0 && dScale > 10.0) {
+                            printSysOut("Don't scale too big");
+                            //event.consume();
+                            return;
+                        } else if (deltaY < 0.0 && dScale < 0.20) {
+                            printSysOut("Don't scale too small");
+                            //event.consume();
+                            return;
+                        }
+
+                        if (deltaY < 0) {
+                            zoomFactor = 0.95;
+                        }
+
+                        var x = spImagePane.getHvalue();
+                        var y = spImagePane.getVvalue();
+                        /*
+                            What happens if we don't restore x and y?
+                         */
+                        /*
+                            Let's zoom image with setFitWidth rather than setScale
+                            but save our zoom so we can report it
+                         */
+                        dZoomScale = dZoomScale * zoomFactor;
+                        imgImageView.setFitWidth(anImage.getWidth() * zoomFactor);
+
+                        String scaleReport = String.format("ImageView scale factor %.3f", imgImageView.getScaleX() * dZoomScale);
+                        setStatus(String.format("Zoom %.3f", dZoomScale));
+
+                        /*
+                            Lets try this here and see if that fixes the pan after zoom
+                         */
+                        x = spImagePane.getHvalue();
+                        y = spImagePane.getVvalue();
+
+                        /*
+                         ********************************************************************
+                         *************** The following statement appears to have made it work
+                         * Now wheel zooming preserves panning to the corners
+                         ********************************************************************
+                         */
+                        imgImageView.setFitWidth(anImage.getWidth() * dZoomScale);
+                        /*
+                            What happens if we don't restore x and y?
+                         */
+
+                        spImagePane.setHvalue(x);
+                        spImagePane.setVvalue(y);
+
+                    }
+                } );
+    }
+
+
+    /*
+        Called from App to set things up
+     */
     public void SetUpStuff(){
 
         // initialize combo box choices
@@ -96,9 +242,9 @@ public class SSADisplayImagesController {
         txtSourcePath.setText(sTestImagePath);
         txtDestPath.setText(sTestImagePath);
 
-    }
-    protected void onHelloButtonClick() {
-        welcomeText.setText("Welcome to JavaFX Application!");
+        intImageIndex = 0;
+        bImagesValid = false;
+
     }
 
     public void OnMenuSavePairs(ActionEvent actionEvent) {
@@ -111,21 +257,49 @@ public class SSADisplayImagesController {
     }
 
     public void onGoImagesStart(ActionEvent actionEvent) {
+        intImageIndex = 0;
+        OpenImageFromList();
+        setStatus("First Image Displayed");
     }
 
     public void onGoImageBack10(ActionEvent actionEvent) {
+        if ( bImagesValid && intImageIndex >= 10 ) {
+            intImageIndex = intImageIndex - 10;
+            OpenImageFromList();
+            setStatus("Back 10 Images Displayed");
+        }
     }
 
     public void onGoImageBackOne(ActionEvent actionEvent) {
+        if ( bImagesValid && intImageIndex >= 1 ) {
+            intImageIndex--;
+            OpenImageFromList();
+            setStatus("Back 1 Image Displayed");
+        }
     }
 
     public void onGoImageForwardOne(ActionEvent actionEvent) {
+        if ( bImagesValid && intImageIndex < (sImageList.length -1 ) ) {
+            intImageIndex++;
+            OpenImageFromList();
+            setStatus("Forward 1 Image Displayed");
+        }
     }
 
     public void onGoImageForward10(ActionEvent actionEvent) {
+        if ( bImagesValid && intImageIndex < (sImageList.length -11 ) ) {
+            intImageIndex++;
+            OpenImageFromList();
+            setStatus("Forward 10 Image Displayed");
+        }
     }
 
     public void onGoImagesEnd(ActionEvent actionEvent) {
+        if ( bImagesValid ) {
+            intImageIndex = sImageList.length - 1;
+        }
+        OpenImageFromList();
+        setStatus("Last Image Displayed");
     }
 
     public void OnListViewMouseClicked(MouseEvent mouseEvent) {
@@ -257,14 +431,24 @@ public class SSADisplayImagesController {
      */
     public void OnViewSource(ActionEvent actionEvent) {
 
-        String[] sImageFileNames = GetImagesInFolder( txtSourcePath.getText(), false );
+        String[] sImageFileNames = GetImagesInFolder(txtSourcePath.getText(), false);
         setStatus(String.format("Source Images Found: %d", sImageFileNames.length));
+        if (sImageFileNames.length > 0) {
+            bImagesValid = true;
+            sImageList = sImageFileNames;
+            intImageIndex = sImageList.length - 1;
+        }
     }
 
     public void OnViewDestination(ActionEvent actionEvent) {
 
         String[] sImageFileNames = GetImagesInFolder( txtDestPath.getText(), true );
         setStatus(String.format("Destination Images Found: %d", sImageFileNames.length));
+        if (sImageFileNames.length > 0) {
+            bImagesValid = true;
+            sImageList = sImageFileNames;
+            intImageIndex = sImageList.length - 1;
+        }
     }
 
     public void OnCopySource(ActionEvent actionEvent) {
