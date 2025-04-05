@@ -44,11 +44,7 @@
                 </HBox>
                 <ScrollPane fx:id="spImagePane" pannable="true" VBox.vgrow="ALWAYS">
                     <content>
-                        <Pane prefHeight="200.0" prefWidth="200.0">
-                            <children>
-                                <ImageView fx:id="imgImageView" pickOnBounds="true" preserveRatio="true" />
-                            </children>
-                        </Pane>
+                        <ImageView fx:id="imgImageView" focusTraversable="true" onMouseClicked="#ImgOnMouseClicked" onMouseDragged="#ImgOnMouseDragged" pickOnBounds="true" preserveRatio="true" />
                     </content>
                 </ScrollPane>
                 <HBox fillHeight="false">

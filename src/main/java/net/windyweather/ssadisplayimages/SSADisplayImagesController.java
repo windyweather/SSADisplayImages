@@ -80,6 +80,7 @@ public class SSADisplayImagesController {
         and do we have any images at all
      */
     private String[] sImageList;
+    private String  sImageBasePath;
     private int intImageIndex;
     private boolean bImagesValid;
 
@@ -112,15 +113,20 @@ public class SSADisplayImagesController {
             Check for sanity of the call
          */
         if ( !bImagesValid || intImageIndex >= sImageList.length ) {
-            setStatus("OpenImageFromList no images");
+            setStatus("OpenImageFromList no images or invalid index");
+            lblImageName.setText("");
             return;
         }
         /*
-            Get the image we are interested in
+            Get the image we are interested in.
+            Reconstruct the absolute path from the base path we saved, and
+            the file name returned by the scanner
          */
-        String imageFilePath = sImageList[intImageIndex];
-        printSysOut(String.format( "openImageFromList - Opening %s", imageFilePath ));
-        File selectedImageFile = new File( imageFilePath );
+        String sImageFileName = sImageList[intImageIndex];
+        String sImageFilePath = sImageBasePath + File.separator + sImageFileName;
+        printSysOut(String.format( "openImageFromList - Opening %s", sImageFilePath ));
+        lblImageName.setText( sImageFileName );
+        File selectedImageFile = new File( sImageFilePath );
         /*
             we appear to have a file so we will try to load the image with it.
          */
@@ -257,9 +263,13 @@ public class SSADisplayImagesController {
     }
 
     public void onGoImagesStart(ActionEvent actionEvent) {
-        intImageIndex = 0;
-        OpenImageFromList();
-        setStatus("First Image Displayed");
+        if ( bImagesValid ) {
+            intImageIndex = 0;
+            OpenImageFromList();
+            setStatus("First Image Displayed");
+        } else {
+            setStatus("No images to display");
+        }
     }
 
     public void onGoImageBack10(ActionEvent actionEvent) {
@@ -267,6 +277,8 @@ public class SSADisplayImagesController {
             intImageIndex = intImageIndex - 10;
             OpenImageFromList();
             setStatus("Back 10 Images Displayed");
+        } else {
+            onGoImagesStart( actionEvent );
         }
     }
 
@@ -275,6 +287,8 @@ public class SSADisplayImagesController {
             intImageIndex--;
             OpenImageFromList();
             setStatus("Back 1 Image Displayed");
+        } else {
+            onGoImagesStart( actionEvent );
         }
     }
 
@@ -283,6 +297,8 @@ public class SSADisplayImagesController {
             intImageIndex++;
             OpenImageFromList();
             setStatus("Forward 1 Image Displayed");
+        } else {
+            onGoImagesEnd(actionEvent);
         }
     }
 
@@ -291,15 +307,18 @@ public class SSADisplayImagesController {
             intImageIndex++;
             OpenImageFromList();
             setStatus("Forward 10 Image Displayed");
+        } else {
+            onGoImagesEnd(actionEvent);
         }
     }
 
     public void onGoImagesEnd(ActionEvent actionEvent) {
         if ( bImagesValid ) {
             intImageIndex = sImageList.length - 1;
+            OpenImageFromList();
+            setStatus("Last Image Displayed");
+            printSysOut("Last Image Displayed");
         }
-        OpenImageFromList();
-        setStatus("Last Image Displayed");
     }
 
     public void OnListViewMouseClicked(MouseEvent mouseEvent) {
@@ -409,6 +428,12 @@ public class SSADisplayImagesController {
             sFPfx = txtFilePrefix.getText();
         }
 
+        /*
+            Save the base path because we need it later to find
+            the images. Only the file names are saved in the
+            scanner result list.
+         */
+        sImageBasePath = sFolder;
         String[] saIncludeImages = new String[]{sFPfx + "*.bmp",sFPfx + "*.jpg", sFPfx+"*.png"  };
 
         DirectoryScanner scanner = new DirectoryScanner();
@@ -437,6 +462,7 @@ public class SSADisplayImagesController {
             bImagesValid = true;
             sImageList = sImageFileNames;
             intImageIndex = sImageList.length - 1;
+            onGoImagesEnd( actionEvent );
         }
     }
 
@@ -448,6 +474,7 @@ public class SSADisplayImagesController {
             bImagesValid = true;
             sImageList = sImageFileNames;
             intImageIndex = sImageList.length - 1;
+            onGoImagesEnd( actionEvent );
         }
     }
 
@@ -461,5 +488,16 @@ public class SSADisplayImagesController {
     }
 
     public void OnCloseAppButton(ActionEvent actionEvent) {
+    }
+
+    public void ImgOnMouseClicked(MouseEvent mouseEvent) {
+    }
+
+    /*
+        The following is called on a drag, and its very existence
+        makes the image drag a success
+     */
+    public void ImgOnMouseDragged(MouseEvent mouseEvent) {
+        //printSysOut("ImgOnMouseDragged");
     }
 }
