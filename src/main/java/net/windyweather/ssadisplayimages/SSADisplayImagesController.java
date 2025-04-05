@@ -14,7 +14,7 @@ import java.io.File;
 
 // See if we can find DirectoryScanner somewhere
 
-import org.codehaus.plexus.util.AbstractScanner;
+//import org.codehaus.plexus.util.AbstractScanner;
 import org.codehaus.plexus.util.DirectoryScanner;
 
 
@@ -74,6 +74,12 @@ public class SSADisplayImagesController {
         txtStatus.setText( sts );
     }
 
+    //
+    // Do this in one place so we can easily turn it off later
+    //
+    public static void printSysOut( String str ) {
+        System.out.println(str);
+    }
 
     public void SetUpStuff(){
 
@@ -218,24 +224,47 @@ public class SSADisplayImagesController {
 
     /*
         Use apache DirectoryScanner to get a list of images in the specified folder
+        with or without the File Prefix. Source does not use prefix, destination does
      */
-    private String[] GetImagesInFolder( String folder ){
-
+    private String[] GetImagesInFolder( String sFolder, boolean bUsePfx ){
         /*
             we care about only three image types: *.bmp, *.jpg, *.png
          */
-        String sFPfx = txtFilePrefix.getText();
+        String sFPfx = "";
+        if ( bUsePfx) {
+            sFPfx = txtFilePrefix.getText();
+        }
 
         String[] saIncludeImages = new String[]{sFPfx + "*.bmp",sFPfx + "*.jpg", sFPfx+"*.png"  };
 
         DirectoryScanner scanner = new DirectoryScanner();
-        scanner.setIncludes( saIncludeImages )
+        scanner.setIncludes( saIncludeImages );
+        scanner.setCaseSensitive( false );
+        scanner.setBasedir( new File( sFolder ));
+        scanner.scan();
+
+        String[] files = scanner.getIncludedFiles();
+        int iHowMany = files.length;
+
+        printSysOut(String.format("GetImagesInFolder found %d files in %s", iHowMany, sFolder));
+
+        return files;
+
     }
+
+    /*
+        Scan the Source for files. Don't use the File Prefix in the Source
+     */
     public void OnViewSource(ActionEvent actionEvent) {
+
+        String[] sImageFileNames = GetImagesInFolder( txtSourcePath.getText(), false );
+        setStatus(String.format("Source Images Found: %d", sImageFileNames.length));
     }
 
     public void OnViewDestination(ActionEvent actionEvent) {
 
+        String[] sImageFileNames = GetImagesInFolder( txtDestPath.getText(), true );
+        setStatus(String.format("Destination Images Found: %d", sImageFileNames.length));
     }
 
     public void OnCopySource(ActionEvent actionEvent) {
