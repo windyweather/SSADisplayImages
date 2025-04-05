@@ -1,7 +1,23 @@
 package net.windyweather.ssadisplayimages;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
+
+
+// See if we can find DirectoryScanner somewhere
+
+import org.codehaus.plexus.util.AbstractScanner;
+import org.codehaus.plexus.util.DirectoryScanner;
+
+
 
 public class SSADisplayImagesController {
     public SplitPane splitPaneOutsideContainer;
@@ -17,7 +33,11 @@ public class SSADisplayImagesController {
     public Button btnImageForwardOne;
     public Button btnImageForward10;
     public Button btnGoImagesEnd;
-    public ListView lvScreenShotPairs;
+    /*
+        not the real <type> just a placeholder to shut up the compiler
+        The list view is never used here
+     */
+    public ListView<String> lvScreenShotPairs;
     public Button btnMovePairTop;
     public Button btnMovePairDown;
     public Button btnMovePairUp;
@@ -27,7 +47,7 @@ public class SSADisplayImagesController {
     public Button btnSetSourcePath;
     public TextField txtDestPath;
     public Button btnSetDestPath;
-    public ComboBox cbChooseFolderSuffix;
+    public ComboBox<String> cbChooseFolderSuffix;
     public TextField txtFilePrefix;
     public CheckBox chkPreserveFileNames;
     public Button btnRemovePair;
@@ -45,7 +65,188 @@ public class SSADisplayImagesController {
     private Label welcomeText;
 
     @FXML
+
+    //
+    // Put some text in the status line to say what's up
+    //
+    public void setStatus( String sts ) {
+
+        txtStatus.setText( sts );
+    }
+
+
+    public void SetUpStuff(){
+
+        // initialize combo box choices
+        ObservableList<String> sol = FXCollections.observableArrayList("yyyy_MM", "", "yyyy_MM_dd");
+        cbChooseFolderSuffix.setItems(sol);
+        cbChooseFolderSuffix.getSelectionModel().selectFirst();
+
+        /*
+        set some paths for testing
+         */
+        String sTestImagePath = "D:\\MMO_Pictures\\AlienBlackout";
+
+        txtSourcePath.setText(sTestImagePath);
+        txtDestPath.setText(sTestImagePath);
+
+    }
     protected void onHelloButtonClick() {
         welcomeText.setText("Welcome to JavaFX Application!");
+    }
+
+    public void OnMenuSavePairs(ActionEvent actionEvent) {
+    }
+
+    public void OnMenuCloseApplication(ActionEvent actionEvent) {
+    }
+
+    public void onAboutApplication(ActionEvent actionEvent) {
+    }
+
+    public void onGoImagesStart(ActionEvent actionEvent) {
+    }
+
+    public void onGoImageBack10(ActionEvent actionEvent) {
+    }
+
+    public void onGoImageBackOne(ActionEvent actionEvent) {
+    }
+
+    public void onGoImageForwardOne(ActionEvent actionEvent) {
+    }
+
+    public void onGoImageForward10(ActionEvent actionEvent) {
+    }
+
+    public void onGoImagesEnd(ActionEvent actionEvent) {
+    }
+
+    public void OnListViewMouseClicked(MouseEvent mouseEvent) {
+    }
+
+    public void OnMovePairTop(ActionEvent actionEvent) {
+    }
+
+    public void OnMovePairUp(ActionEvent actionEvent) {
+    }
+
+    public void OnMovePairDown(ActionEvent actionEvent) {
+    }
+
+    /*
+          Use directoryChooser dialogs launched from stage.
+       */
+    public void OnSetDestinPath(ActionEvent actionEvent) {
+        /*
+            Get a path based on the last path we've seen
+         */
+        Stage stage = (Stage) txtSelectedPairName.getScene().getWindow();
+        DirectoryChooser dirChooser = new DirectoryChooser();
+        dirChooser.setTitle("Set the Destination Path");
+        String lastPath = txtDestPath.getText();
+        if (!lastPath.isBlank()) {
+            File aFile = new File(lastPath);
+            // do we have a valid path to a folder here?
+            if ( aFile.isDirectory() ) {
+                dirChooser.setInitialDirectory(aFile);
+            }
+        }
+        /*
+           We either set the initial path if we had one
+           or we'll just go in blind and let the user
+           navigate where he/she wants.
+           Launch the chooser dialog and then stuff
+           the result into the source path
+       */
+        File selDir = dirChooser.showDialog(( stage ));
+        /*
+            make sure we got something back otherwise just ignore it
+         */
+        if ( selDir != null ) {
+            txtDestPath.setText(selDir.getAbsolutePath());
+            setStatus("Destination Path Set");
+        } else {
+            setStatus("No path selected");
+        }
+    }
+
+    public void OnSetSourcePath(ActionEvent actionEvent) {
+        /*
+            Get a path based on the last path we've seen
+         */
+        Stage stage = (Stage) txtSelectedPairName.getScene().getWindow();
+        DirectoryChooser dirChooser = new DirectoryChooser();
+        dirChooser.setTitle("Set the Source Path");
+        String lastPath = txtSourcePath.getText();
+        if (!lastPath.isBlank()) {
+            File aFile = new File(lastPath);
+            // do we have a valid path to a folder here?
+            if ( aFile.isDirectory() ) {
+                dirChooser.setInitialDirectory(aFile);
+            }
+        }
+        /*
+           We either set the initial path if we had one
+           or we'll just go in blind and let the user
+           navigate where he/she wants.
+           Launch the chooser dialog and then stuff
+           the result into the source path
+       */
+        File selDir = dirChooser.showDialog(( stage ));
+        /*
+            make sure we got something back otherwise just ignore it
+         */
+        if ( selDir != null ) {
+            txtSourcePath.setText(selDir.getAbsolutePath());
+            setStatus("Source Path Set");
+        } else {
+            setStatus("No path selected");
+        }
+    }
+
+
+
+    public void OnRemovePair(ActionEvent actionEvent) {
+    }
+
+    public void btnAddPair(ActionEvent actionEvent) {
+    }
+
+    public void OnUpdatePair(ActionEvent actionEvent) {
+    }
+
+    /*
+        Use apache DirectoryScanner to get a list of images in the specified folder
+     */
+    private String[] GetImagesInFolder( String folder ){
+
+        /*
+            we care about only three image types: *.bmp, *.jpg, *.png
+         */
+        String sFPfx = txtFilePrefix.getText();
+
+        String[] saIncludeImages = new String[]{sFPfx + "*.bmp",sFPfx + "*.jpg", sFPfx+"*.png"  };
+
+        DirectoryScanner scanner = new DirectoryScanner();
+        scanner.setIncludes( saIncludeImages )
+    }
+    public void OnViewSource(ActionEvent actionEvent) {
+    }
+
+    public void OnViewDestination(ActionEvent actionEvent) {
+
+    }
+
+    public void OnCopySource(ActionEvent actionEvent) {
+    }
+
+    public void OnDeleteSource(ActionEvent actionEvent) {
+    }
+
+    public void OnMakeTestPairs(ActionEvent actionEvent) {
+    }
+
+    public void OnCloseAppButton(ActionEvent actionEvent) {
     }
 }

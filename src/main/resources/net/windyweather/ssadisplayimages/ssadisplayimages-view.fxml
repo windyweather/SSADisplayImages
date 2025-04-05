@@ -197,7 +197,7 @@
                                 </HBox>
                                 <HBox alignment="TOP_RIGHT" prefHeight="60.0" prefWidth="200.0">
                                     <children>
-                                        <CheckBox fx:id="chkTestLogOnly" mnemonicParsing="false" onAction="#OnTestLogOnly" text="Test - Log Only">
+                                        <CheckBox fx:id="chkTestLogOnly" mnemonicParsing="false" text="Test - Log Only">
                                             <padding>
                                                 <Insets left="10.0" top="5.0" />
                                             </padding>
@@ -210,7 +210,7 @@
                                 </HBox>
                                 <HBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="200.0">
                                     <children>
-                                        <TextField fx:id="txtStatus" editable="false" onKeyPressed="#OnKeyPressedStatus" HBox.hgrow="ALWAYS">
+                                        <TextField fx:id="txtStatus" editable="false" HBox.hgrow="ALWAYS">
                                             <HBox.margin>
                                                 <Insets right="40.0" />
                                             </HBox.margin>
