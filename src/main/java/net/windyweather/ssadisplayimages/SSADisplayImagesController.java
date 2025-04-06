@@ -497,11 +497,11 @@ public class SSADisplayImagesController {
             Should only be used for Source since some games store images
             in subfolders, oddly.
          */
-        boolean bSubFolders = false;
         String sSubPfx = "";
         if ( bUseSubFolders ) {
-            bSubFolders = chkSearchSubFolders.isSelected();
-            sSubPfx = "**\\";
+            if ( chkSearchSubFolders.isSelected() ) {
+                sSubPfx = "**\\";
+            }
         }
         /*
             Save the base path because we need it later to find
