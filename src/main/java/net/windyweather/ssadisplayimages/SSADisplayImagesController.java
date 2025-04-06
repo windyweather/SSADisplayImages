@@ -118,13 +118,17 @@ public class SSADisplayImagesController {
             return;
         }
         /*
+            Time the following process in Milliseconds just to see how long it takes
+         */
+        long intStartOpen = System.currentTimeMillis();
+        /*
             Get the image we are interested in.
             Reconstruct the absolute path from the base path we saved, and
             the file name returned by the scanner
          */
         String sImageFileName = sImageList[intImageIndex];
         String sImageFilePath = sImageBasePath + File.separator + sImageFileName;
-        printSysOut(String.format( "openImageFromList - Opening %s", sImageFilePath ));
+        printSysOut(String.format( "openImageFromList - Opening index %d %s", intImageIndex, sImageFilePath ));
         lblImageName.setText( sImageFileName );
         File selectedImageFile = new File( sImageFilePath );
         /*
@@ -155,6 +159,10 @@ public class SSADisplayImagesController {
         spImagePane.setHvalue(0.5);
         spImagePane.setVvalue(0.5);
 
+        /*
+            Scrollbar shows us where we are in the list
+         */
+        sbImageListScrollBar.setValue( intImageIndex);
          /*
             Now set up a scroll wheel based zoom
             and set a default zoom scale
@@ -227,8 +235,47 @@ public class SSADisplayImagesController {
 
                     }
                 } );
+        long intEndOpen = System.currentTimeMillis();
+        printSysOut(String.format("OpenImageFromList %d ms", intEndOpen - intStartOpen));
     }
 
+    /*
+        Enable / Disable the function buttons based on whether we have
+        paths that are valid.
+     */
+    void EnableFunctionButtons() {
+        boolean bSourceBlank = txtSourcePath.getText().isBlank();
+        boolean bDestinationBlank = txtDestPath.getText().isBlank();
+
+        if ( bSourceBlank && bDestinationBlank ) {
+            btnViewSource.setDisable( true );
+            btnViewDestination.setDisable( true );
+            btnCopySource.setDisable( true );
+            btnDeleteSource.setDisable( true );
+            return;
+        }
+        if (bSourceBlank) {
+            btnViewSource.setDisable( true );
+            btnDeleteSource.setDisable( true );
+            btnCopySource.setDisable( true );
+            return;
+        }
+        if ( bDestinationBlank ) {
+            btnViewDestination.setDisable( true );
+            btnCopySource.setDisable( true );
+            return;
+        }
+        /*
+            Check to see if we have valid paths and set the buttons accordingly
+         */
+        File fileSrc = new File( txtSourcePath.getText() );
+        File fileDst = new File( txtDestPath.getText() );
+        btnViewSource.setDisable( !fileSrc.isDirectory() );
+        btnDeleteSource.setDisable( !fileSrc.isDirectory() );
+        btnViewDestination.setDisable( !fileDst.isDirectory() );
+        btnCopySource.setDisable( !( fileSrc.isDirectory() && fileDst.isDirectory() ) );
+
+    }
 
     /*
         Called from App to set things up
@@ -250,6 +297,18 @@ public class SSADisplayImagesController {
 
         intImageIndex = 0;
         bImagesValid = false;
+
+        /*
+            Set the function buttons and enable listeners for file paths
+         */
+        EnableFunctionButtons();
+        txtSourcePath.textProperty().addListener( ( observable, oldvalue, newvalue) -> {
+            EnableFunctionButtons();
+        });
+        txtDestPath.textProperty().addListener( ( observable, oldvalue, newvalue) -> {
+            EnableFunctionButtons();
+        });
+
 
     }
 
@@ -304,7 +363,7 @@ public class SSADisplayImagesController {
 
     public void onGoImageForward10(ActionEvent actionEvent) {
         if ( bImagesValid && intImageIndex < (sImageList.length -11 ) ) {
-            intImageIndex++;
+            intImageIndex += 10;
             OpenImageFromList();
             setStatus("Forward 10 Image Displayed");
         } else {
@@ -364,6 +423,7 @@ public class SSADisplayImagesController {
          */
         if ( selDir != null ) {
             txtDestPath.setText(selDir.getAbsolutePath());
+            EnableFunctionButtons();
             setStatus("Destination Path Set");
         } else {
             setStatus("No path selected");
@@ -398,6 +458,7 @@ public class SSADisplayImagesController {
          */
         if ( selDir != null ) {
             txtSourcePath.setText(selDir.getAbsolutePath());
+            EnableFunctionButtons();
             setStatus("Source Path Set");
         } else {
             setStatus("No path selected");
@@ -420,6 +481,8 @@ public class SSADisplayImagesController {
         with or without the File Prefix. Source does not use prefix, destination does
      */
     private String[] GetImagesInFolder( String sFolder, boolean bUsePfx ){
+
+        long intStartOpen = System.currentTimeMillis();
         /*
             we care about only three image types: *.bmp, *.jpg, *.png
          */
@@ -445,8 +508,16 @@ public class SSADisplayImagesController {
         String[] files = scanner.getIncludedFiles();
         int iHowMany = files.length;
 
-        printSysOut(String.format("GetImagesInFolder found %d files in %s", iHowMany, sFolder));
+        /*
+            Set the scroll bar limits to show the position in the list as
+            we view images.
+         */
+        sbImageListScrollBar.setMax( iHowMany-1 );
+        sbImageListScrollBar.setMin( 0 );
 
+        printSysOut(String.format("GetImagesInFolder found %d files in %s", iHowMany, sFolder));
+        long intEndOpen = System.currentTimeMillis();
+        printSysOut(String.format("GetImagesInFolder %d ms", intEndOpen - intStartOpen));
         return files;
 
     }
@@ -457,25 +528,27 @@ public class SSADisplayImagesController {
     public void OnViewSource(ActionEvent actionEvent) {
 
         String[] sImageFileNames = GetImagesInFolder(txtSourcePath.getText(), false);
-        setStatus(String.format("Source Images Found: %d", sImageFileNames.length));
+
         if (sImageFileNames.length > 0) {
             bImagesValid = true;
             sImageList = sImageFileNames;
             intImageIndex = sImageList.length - 1;
             onGoImagesEnd( actionEvent );
         }
+        setStatus(String.format("Source Images Found: %d", sImageFileNames.length));
     }
 
     public void OnViewDestination(ActionEvent actionEvent) {
 
         String[] sImageFileNames = GetImagesInFolder( txtDestPath.getText(), true );
-        setStatus(String.format("Destination Images Found: %d", sImageFileNames.length));
+
         if (sImageFileNames.length > 0) {
             bImagesValid = true;
             sImageList = sImageFileNames;
             intImageIndex = sImageList.length - 1;
             onGoImagesEnd( actionEvent );
         }
+        setStatus(String.format("Destination Images Found: %d", sImageFileNames.length));
     }
 
     public void OnCopySource(ActionEvent actionEvent) {
