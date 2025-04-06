@@ -480,11 +480,12 @@ public class SSADisplayImagesController {
         Use apache DirectoryScanner to get a list of images in the specified folder
         with or without the File Prefix. Source does not use prefix, destination does
      */
-    private String[] GetImagesInFolder( String sFolder, boolean bUsePfx ){
+    private String[] GetImagesInFolder( String sFolder, boolean bUsePfx, boolean bUseSubFolders ){
 
         long intStartOpen = System.currentTimeMillis();
         /*
             we care about only three image types: *.bmp, *.jpg, *.png
+            for Destination, we use the File Prefix. For source, get all images.
          */
         String sFPfx = "";
         if ( bUsePfx) {
@@ -492,12 +493,23 @@ public class SSADisplayImagesController {
         }
 
         /*
+            Set things up to search for subfolders if we should
+            Should only be used for Source since some games store images
+            in subfolders, oddly.
+         */
+        boolean bSubFolders = false;
+        String sSubPfx = "";
+        if ( bUseSubFolders ) {
+            bSubFolders = chkSearchSubFolders.isSelected();
+            sSubPfx = "**\\";
+        }
+        /*
             Save the base path because we need it later to find
             the images. Only the file names are saved in the
             scanner result list.
          */
         sImageBasePath = sFolder;
-        String[] saIncludeImages = new String[]{sFPfx + "*.bmp",sFPfx + "*.jpg", sFPfx+"*.png"  };
+        String[] saIncludeImages = new String[]{sSubPfx+sFPfx + "*.bmp",sFPfx + sSubPfx+ "*.jpg", sSubPfx+sFPfx+"*.png"  };
 
         DirectoryScanner scanner = new DirectoryScanner();
         scanner.setIncludes( saIncludeImages );
@@ -527,7 +539,7 @@ public class SSADisplayImagesController {
      */
     public void OnViewSource(ActionEvent actionEvent) {
 
-        String[] sImageFileNames = GetImagesInFolder(txtSourcePath.getText(), false);
+        String[] sImageFileNames = GetImagesInFolder(txtSourcePath.getText(), false, true);
 
         if (sImageFileNames.length > 0) {
             bImagesValid = true;
@@ -540,7 +552,7 @@ public class SSADisplayImagesController {
 
     public void OnViewDestination(ActionEvent actionEvent) {
 
-        String[] sImageFileNames = GetImagesInFolder( txtDestPath.getText(), true );
+        String[] sImageFileNames = GetImagesInFolder( txtDestPath.getText(), true , false);
 
         if (sImageFileNames.length > 0) {
             bImagesValid = true;
